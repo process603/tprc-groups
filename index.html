@@ -40,6 +40,17 @@
       letter-spacing: 2px;
       text-shadow: 1px 1px 6px rgba(0,0,0,0.8);
     }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .clock {
+      color: white;
+      font-size: 32px;
+      font-weight: 600;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
+    }
     .logo {
       width: 80px; height: 80px;
       border-radius: 50%;
@@ -51,6 +62,29 @@
       width: 100%; height: 100%;
       object-fit: contain;
       border-radius: 50%;
+    }
+    .jft-bar {
+      position: relative; z-index: 1;
+      background: rgba(10, 30, 20, 0.4);
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      text-align: center;
+      padding: 10px 20px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+    }
+    .jft-line1 {
+      font-size: 16px;
+      opacity: 0.85;
+      margin-bottom: 3px;
+    }
+    .jft-quote {
+      font-style: italic;
+      font-size: 18px;
+      margin-bottom: 3px;
+    }
+    .jft-closing {
+      font-size: 16px;
+      font-weight: bold;
     }
     .content {
       position: relative; z-index: 1;
@@ -146,9 +180,17 @@
   <div class="overlay"></div>
   <div class="header">
     <div class="group-time" id="group-time">Loading...</div>
-    <div class="logo">
-      <img src="https://irbrnndhnydywjdmqdvc.supabase.co/storage/v1/object/public/companylogos/logos/4227b196-86b9-47f3-afef-7cf51d50e077.png" alt="TPRC">
+    <div class="header-right">
+      <div class="clock" id="header-clock"></div>
+      <div class="logo">
+        <img src="https://irbrnndhnydywjdmqdvc.supabase.co/storage/v1/object/public/companylogos/logos/4227b196-86b9-47f3-afef-7cf51d50e077.png" alt="TPRC">
+      </div>
     </div>
+  </div>
+  <div class="jft-bar" id="jft-bar" style="display:none;">
+    <div class="jft-line1" id="jft-line1"></div>
+    <div class="jft-quote" id="jft-quote"></div>
+    <div class="jft-closing" id="jft-closing"></div>
   </div>
   <div class="content" id="content"></div>
   <div class="debug" id="debug"></div>
@@ -164,6 +206,7 @@
     var API_KEY = 'AIzaSyC5b_s43NZFklE-jL5qt216bzUgfjFDRGo';
     var SHEET_ID = '1fHkHBhXTdKQ5Ovxpe7u9VpOCHrEdv4_VbBX2HKXPXx4';
     var RANGE = 'Sheet1!A:F';
+    var JFT_RANGE = 'JFT!A1:F1';
     var MAX_PER_COL = 24;
 
     var SLIDE_TIMES = {
@@ -279,6 +322,34 @@
         'Date: ' + dateStr + ' | Slide: ' + currentSlide + ' | Time: ' + currentTime + ' | Groups: ' + groups.length + ' | Updated: ' + now.toLocaleTimeString();
     }
 
+    function renderJFT(rows) {
+      var bar = document.getElementById('jft-bar');
+      if (!rows || rows.length === 0 || !rows[0]) {
+        bar.style.display = 'none';
+        return;
+      }
+      var row = rows[0];
+      var date = row[0] || '';
+      var title = row[1] || '';
+      var page = row[2] || '';
+      var quote = row[3] || '';
+      var quoteSource = row[4] || '';
+      var jftLine = row[5] || '';
+
+      if (!title && !quote && !jftLine) {
+        bar.style.display = 'none';
+        return;
+      }
+
+      document.getElementById('jft-line1').textContent =
+        [date, title, page].filter(Boolean).join(' — ');
+      document.getElementById('jft-quote').textContent =
+        quote ? '"' + quote + '" — ' + quoteSource : '';
+      document.getElementById('jft-closing').textContent = jftLine;
+
+      bar.style.display = 'block';
+    }
+
     function fetchData() {
       var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID +
                 '/values/' + encodeURIComponent(RANGE) +
@@ -300,23 +371,39 @@
         });
     }
 
+    function fetchJFT() {
+      var url = 'https://sheets.googleapis.com/v4/spreadsheets/' + SHEET_ID +
+                '/values/' + encodeURIComponent(JFT_RANGE) +
+                '?key=' + API_KEY;
+
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          renderJFT(data.values);
+        })
+        .catch(function(err) {
+          document.getElementById('jft-bar').style.display = 'none';
+        });
+    }
+
     // --- Screensaver logic ---
     function isScreensaverTime() {
       var hour = new Date().getHours();
-      return hour >= 16 || hour < 7; // 4pm through 7am
+      return hour >= 16 || hour < 7;
     }
 
     function updateClock() {
-      var clockEl = document.getElementById('screensaver-clock');
       var now = new Date();
-      clockEl.textContent = now.toLocaleTimeString('en-US', {
+      var timeStr = now.toLocaleTimeString('en-US', {
         hour: 'numeric', minute: '2-digit', hour12: true
       });
+      document.getElementById('header-clock').textContent = timeStr;
+      document.getElementById('screensaver-clock').textContent = timeStr;
     }
 
     function shiftPosition() {
       var content = document.getElementById('screensaver-content');
-      var maxShift = 20; // px
+      var maxShift = 20;
       var x = Math.floor(Math.random() * maxShift) - (maxShift / 2);
       var y = Math.floor(Math.random() * maxShift) - (maxShift / 2);
       content.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
@@ -325,38 +412,38 @@
     function checkDisplayMode() {
       var saver = document.getElementById('screensaver');
       var header = document.querySelector('.header');
+      var jftBar = document.getElementById('jft-bar');
       var content = document.getElementById('content');
 
       if (isScreensaverTime()) {
         saver.style.display = 'flex';
         header.style.display = 'none';
+        jftBar.style.display = 'none';
         content.style.display = 'none';
       } else {
         saver.style.display = 'none';
         header.style.display = 'flex';
         content.style.display = 'flex';
+        // jftBar display is controlled by renderJFT itself
       }
     }
 
     // Initial load
     fetchData();
+    fetchJFT();
     checkDisplayMode();
     updateClock();
     shiftPosition();
 
-    // Refresh data every 2 minutes silently
     setInterval(fetchData, 120000);
+    setInterval(fetchJFT, 120000);
 
-    // Check slide + screensaver mode every 30 seconds
     setInterval(function() {
       fetchData();
       checkDisplayMode();
     }, 30000);
 
-    // Clock ticks every second, independent of mode
     setInterval(updateClock, 1000);
-
-    // Reshift screensaver position every 5 min to prevent burn-in
     setInterval(shiftPosition, 5 * 60 * 1000);
   </script>
 </body>

@@ -207,7 +207,7 @@
     var SHEET_ID = '1fHkHBhXTdKQ5Ovxpe7u9VpOCHrEdv4_VbBX2HKXPXx4';
     var RANGE = 'Sheet1!A:F';
     var JFT_RANGE = 'JFT!A1:F1';
-    var MAX_PER_COL = 24;
+    var MAX_PER_COL = 18; // tuned for this monitor — lower further (16, 14) if a large group still clips
 
     var SLIDE_TIMES = {
       1: '8:00 AM',
@@ -272,46 +272,33 @@
         for (var g = 0; g < groups.length; g++) {
           var group = groups[g];
           var clients = group.clients;
-          var primary = clients.slice(0, MAX_PER_COL);
-          var overflow = clients.slice(MAX_PER_COL);
 
           var section = document.createElement('div');
           section.className = 'group-section';
 
-          var col1 = document.createElement('div');
-          col1.className = 'col';
-          var facDiv = document.createElement('div');
-          facDiv.className = 'facilitator';
-          facDiv.textContent = group.facilitator;
-          col1.appendChild(facDiv);
-          for (var c = 0; c < primary.length; c++) {
-            var n = primary[c].trim();
-            if (n) {
-              var d = document.createElement('div');
-              d.className = 'client';
-              d.textContent = n;
-              col1.appendChild(d);
-            }
-          }
-          section.appendChild(col1);
+          var chunkCount = Math.max(1, Math.ceil(clients.length / MAX_PER_COL));
 
-          if (overflow.length > 0) {
-            var col2 = document.createElement('div');
-            col2.className = 'col';
-            var spacer = document.createElement('div');
-            spacer.className = 'facilitator';
-            spacer.innerHTML = '&nbsp;';
-            col2.appendChild(spacer);
-            for (var oc = 0; oc < overflow.length; oc++) {
-              var on = overflow[oc].trim();
-              if (on) {
-                var od = document.createElement('div');
-                od.className = 'client';
-                od.textContent = on;
-                col2.appendChild(od);
+          for (var chunkIdx = 0; chunkIdx < chunkCount; chunkIdx++) {
+            var chunk = clients.slice(chunkIdx * MAX_PER_COL, (chunkIdx + 1) * MAX_PER_COL);
+
+            var col = document.createElement('div');
+            col.className = 'col';
+
+            var header = document.createElement('div');
+            header.className = 'facilitator';
+            header.innerHTML = chunkIdx === 0 ? group.facilitator : '&nbsp;';
+            col.appendChild(header);
+
+            for (var c = 0; c < chunk.length; c++) {
+              var n = chunk[c].trim();
+              if (n) {
+                var d = document.createElement('div');
+                d.className = 'client';
+                d.textContent = n;
+                col.appendChild(d);
               }
             }
-            section.appendChild(col2);
+            section.appendChild(col);
           }
 
           content.appendChild(section);
@@ -424,7 +411,6 @@
         saver.style.display = 'none';
         header.style.display = 'flex';
         content.style.display = 'flex';
-        // jftBar display is controlled by renderJFT itself
       }
     }
 

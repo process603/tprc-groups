@@ -99,8 +99,10 @@
       flex: 1;
       border-right: 1px solid rgba(255,255,255,0.15);
       padding: 0 10px;
+      flex-direction: column;
     }
     .group-section:last-child { border-right: none; }
+    .group-cols { display: flex; flex: 1; }
     .col { flex: 1; overflow: hidden; }
     .col + .col {
       padding-left: 6px;
@@ -117,6 +119,14 @@
       overflow: hidden;
       text-overflow: ellipsis;
       text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+    }
+    .group-note {
+      color: #cfe8d8;
+      font-size: 15px;
+      font-style: italic;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
     }
     .client {
       color: white;
@@ -141,7 +151,6 @@
       z-index: 2;
     }
 
-    /* --- Screensaver --- */
     #screensaver {
       display: none;
       position: fixed;
@@ -205,9 +214,9 @@
   <script>
     var API_KEY = 'AIzaSyC5b_s43NZFklE-jL5qt216bzUgfjFDRGo';
     var SHEET_ID = '1fHkHBhXTdKQ5Ovxpe7u9VpOCHrEdv4_VbBX2HKXPXx4';
-    var RANGE = 'Sheet1!A:F';
+    var RANGE = 'Sheet1!A:G';
     var JFT_RANGE = 'JFT!A1:F1';
-    var MAX_PER_COL = 18; // tuned for this monitor — lower further (16, 14) if a large group still clips
+    var MAX_PER_COL = 18;
 
     var SLIDE_TIMES = {
       1: '8:00 AM',
@@ -258,7 +267,8 @@
         if (rowDate === dateStr && rowSlide === currentSlide) {
           groups.push({
             facilitator: String(row[4] || ''),
-            clients: String(row[5] || '').split(',')
+            clients: String(row[5] || '').split(',').filter(function(c) { return c.trim() !== ''; }),
+            note: String(row[6] || '')
           });
         }
       }
@@ -276,6 +286,21 @@
           var section = document.createElement('div');
           section.className = 'group-section';
 
+          var header = document.createElement('div');
+          header.className = 'facilitator';
+          header.textContent = group.facilitator;
+          section.appendChild(header);
+
+          if (group.note) {
+            var noteDiv = document.createElement('div');
+            noteDiv.className = 'group-note';
+            noteDiv.textContent = group.note;
+            section.appendChild(noteDiv);
+          }
+
+          var colsWrapper = document.createElement('div');
+          colsWrapper.className = 'group-cols';
+
           var chunkCount = Math.max(1, Math.ceil(clients.length / MAX_PER_COL));
 
           for (var chunkIdx = 0; chunkIdx < chunkCount; chunkIdx++) {
@@ -283,11 +308,6 @@
 
             var col = document.createElement('div');
             col.className = 'col';
-
-            var header = document.createElement('div');
-            header.className = 'facilitator';
-            header.innerHTML = chunkIdx === 0 ? group.facilitator : '&nbsp;';
-            col.appendChild(header);
 
             for (var c = 0; c < chunk.length; c++) {
               var n = chunk[c].trim();
@@ -298,9 +318,10 @@
                 col.appendChild(d);
               }
             }
-            section.appendChild(col);
+            colsWrapper.appendChild(col);
           }
 
+          section.appendChild(colsWrapper);
           content.appendChild(section);
         }
       }
@@ -373,7 +394,6 @@
         });
     }
 
-    // --- Screensaver logic ---
     function isScreensaverTime() {
       var hour = new Date().getHours();
       return hour >= 16 || hour < 7;
@@ -414,7 +434,6 @@
       }
     }
 
-    // Initial load
     fetchData();
     fetchJFT();
     checkDisplayMode();

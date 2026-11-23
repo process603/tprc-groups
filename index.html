@@ -259,18 +259,19 @@
     // so if you change a backdrop, check the names are still easy to read
     // from across the room before leaving it up.
     //
-    // Each theme keeps the real background photo and shifts its colour,
-    // so every season still shows an actual photograph rather than a
-    // flat wash. `filter` recolours the photo; `overlay` is the dark
-    // sheet on top that keeps the white client names readable.
+    // Each theme has its own photograph in the backgrounds/ folder.
+    //   bg          the photo
+    //   filter      dims a bright photo ('none' leaves it as shot)
+    //   overlay     the dark sheet on top that keeps the white client
+    //               names readable; the last number is its strength
+    //   saverFilter dims the same photo behind the screensaver clock
     //
-    // To drop in a different photo for a theme, add a bg line to it:
-    //     bg: 'url("backgrounds/thanksgiving.jpg")',
-    // A theme with no bg line uses the normal background photo.
+    // If names are ever hard to read on a theme, raise the last number
+    // of its overlay (0.46 -> 0.55) and check it on the TV itself.
     //
     // To preview a theme on any date, add ?theme= and its name to the
     // address, e.g.  .../tprc-groups/?theme=thanksgiving
-    // Add ?theme=off to force the plain, unfiltered background back.
+    // Add ?theme=off to force the original background back.
 
     var DEFAULT_THEME = {
       name:    'default',
@@ -284,59 +285,75 @@
     // are worked out, not hardcoded, so this keeps running after 2026.
     var HOLIDAY_THEMES = [
       {
-        name:    'thanksgiving',
-        window:  function (y) {
+        name:        'thanksgiving',
+        window:      function (y) {
           var t = nthWeekdayOf(y, 10, 4, 4);          // 4th Thursday of November
           return [addDays(t, -3), addDays(t, 1)];     // Monday to Friday of Thanksgiving week
         },
-        filter:  'sepia(0.7) saturate(2.5) hue-rotate(-20deg) brightness(1.12) contrast(1.05)',
-        overlay: 'rgba(34, 16, 4, 0.46)'
+        bg:          'url("backgrounds/thanksgiving.jpg")',
+        filter:      'none',
+        overlay:     'rgba(24, 12, 4, 0.56)',
+        saverFilter: 'brightness(0.7)'
       },
       {
-        name:    'winter-holidays',
-        window:  function (y) { return [new Date(y, 11, 1), new Date(y, 11, 26)]; },
-        filter:  'saturate(1.55) hue-rotate(8deg) brightness(0.98) contrast(1.12)',
-        overlay: 'rgba(5, 26, 18, 0.48)'
+        name:        'winter-holidays',
+        window:      function (y) { return [new Date(y, 11, 1), new Date(y, 11, 26)]; },
+        bg:          'url("backgrounds/winter-holidays.jpg")',
+        filter:      'none',
+        overlay:     'rgba(5, 18, 24, 0.46)',
+        saverFilter: 'brightness(0.8)'
       },
       {
-        name:    'new-year',
-        window:  function (y) { return [new Date(y, 11, 27), new Date(y + 1, 0, 2)]; },
-        filter:  'saturate(0.7) hue-rotate(172deg) brightness(1.08) contrast(1.05)',
-        overlay: 'rgba(8, 14, 34, 0.46)'
+        name:        'new-year',
+        window:      function (y) { return [new Date(y, 11, 27), new Date(y + 1, 0, 2)]; },
+        bg:          'url("backgrounds/new-year.jpg")',
+        filter:      'none',
+        overlay:     'rgba(8, 12, 30, 0.38)',
+        saverFilter: 'none'
       },
       {
-        name:    'halloween',
-        window:  function (y) { return [new Date(y, 9, 24), new Date(y, 9, 31)]; },
-        filter:  'sepia(0.6) saturate(3) hue-rotate(-38deg) brightness(0.95) contrast(1.15)',
-        overlay: 'rgba(22, 8, 26, 0.46)'
+        name:        'halloween',
+        window:      function (y) { return [new Date(y, 9, 24), new Date(y, 9, 31)]; },
+        bg:          'url("backgrounds/halloween.jpg")',
+        filter:      'none',
+        overlay:     'rgba(18, 8, 24, 0.44)',
+        saverFilter: 'brightness(0.85)'
       }
     ];
 
     // Every day of the year falls in exactly one of these.
     var SEASON_THEMES = [
       {
-        name:    'spring',
-        window:  function (y) { return [new Date(y, 2, 1), new Date(y, 4, 31)]; },
-        filter:  'saturate(1.9) hue-rotate(12deg) brightness(1.2) contrast(1.02)',
-        overlay: 'rgba(6, 28, 14, 0.45)'
+        name:        'spring',
+        window:      function (y) { return [new Date(y, 2, 1), new Date(y, 4, 31)]; },
+        bg:          'url("backgrounds/spring.jpg")',
+        filter:      'brightness(0.78)',
+        overlay:     'rgba(6, 24, 14, 0.52)',
+        saverFilter: 'brightness(0.5)'
       },
       {
-        name:    'summer',
-        window:  function (y) { return [new Date(y, 5, 1), new Date(y, 7, 31)]; },
-        filter:  'saturate(1.7) hue-rotate(-6deg) brightness(1.26)',
-        overlay: 'rgba(4, 24, 28, 0.45)'
+        name:        'summer',
+        window:      function (y) { return [new Date(y, 5, 1), new Date(y, 7, 31)]; },
+        bg:          'url("backgrounds/summer.jpg")',
+        filter:      'none',
+        overlay:     'rgba(4, 20, 14, 0.46)',
+        saverFilter: 'brightness(0.8)'
       },
       {
-        name:    'autumn',
-        window:  function (y) { return [new Date(y, 8, 1), new Date(y, 10, 30)]; },
-        filter:  'sepia(0.5) saturate(2) hue-rotate(-16deg) brightness(1.06)',
-        overlay: 'rgba(26, 16, 6, 0.47)'
+        name:        'autumn',
+        window:      function (y) { return [new Date(y, 8, 1), new Date(y, 10, 30)]; },
+        bg:          'url("backgrounds/autumn.jpg")',
+        filter:      'brightness(0.85)',
+        overlay:     'rgba(26, 14, 5, 0.52)',
+        saverFilter: 'brightness(0.55)'
       },
       {
-        name:    'winter',
-        window:  function (y) { return [new Date(y, 11, 1), new Date(y + 1, 1, 29)]; },
-        filter:  'saturate(0.35) hue-rotate(155deg) brightness(1.25) contrast(0.92)',
-        overlay: 'rgba(8, 20, 38, 0.46)'
+        name:        'winter',
+        window:      function (y) { return [new Date(y, 11, 1), new Date(y + 1, 1, 29)]; },
+        bg:          'url("backgrounds/winter.jpg")',
+        filter:      'brightness(0.5)',
+        overlay:     'rgba(8, 18, 36, 0.52)',
+        saverFilter: 'brightness(0.38)'
       }
     ];
 
@@ -396,7 +413,9 @@
       document.querySelector('.overlay').style.background = theme.overlay;
 
       var saver = document.getElementById('saver-bg-layer');
-      saver.style.backgroundImage = theme.saverBg || DEFAULT_THEME.saverBg;
+      // The screensaver follows the season too: a theme's own photo is
+      // used behind the clock unless it names a separate saverBg.
+      saver.style.backgroundImage = theme.saverBg || theme.bg || DEFAULT_THEME.saverBg;
       saver.style.filter = theme.saverFilter || theme.filter || 'none';
     }
 

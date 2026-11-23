@@ -627,6 +627,29 @@
 
     setInterval(updateClock, 1000);
     setInterval(shiftPosition, 5 * 60 * 1000);
+
+    // ===================================================================
+    // NIGHTLY RELOAD
+    // ===================================================================
+    // The page refreshes its DATA every couple of minutes, but it never
+    // reloads its own code. Without this, a change pushed to the repo sits
+    // unseen until somebody walks over to the TV and presses refresh.
+    // So reload once in the small hours, when the screensaver is up and
+    // nobody is reading the screen.
+    var RELOAD_HOUR = 3;
+    var RELOAD_MINUTE = 30;
+    var PAGE_LOADED_AT = Date.now();
+
+    function maybeReloadOvernight() {
+      // Don't bounce straight back if the page was opened at the reload time.
+      if (Date.now() - PAGE_LOADED_AT < 10 * 60 * 1000) return;
+      var now = new Date();
+      if (now.getHours() === RELOAD_HOUR && now.getMinutes() === RELOAD_MINUTE) {
+        location.reload();
+      }
+    }
+
+    setInterval(maybeReloadOvernight, 30000);
   </script>
 </body>
 </html>

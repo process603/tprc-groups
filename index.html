@@ -17,6 +17,18 @@
       display: flex;
       flex-direction: column;
     }
+    /* The photo lives on its own layer so the seasonal colour filter
+       never touches the client names sitting on top of it. */
+    #bg-layer {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url("https://i.imgur.com/BffsTtW.jpeg");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: -1;
+      transition: filter 1.2s ease;
+    }
     .overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
@@ -163,7 +175,18 @@
       justify-content: center;
       z-index: 999;
     }
+    #saver-bg-layer {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url('https://i.imgur.com/pBaRics.jpeg');
+      background-size: cover;
+      background-position: center;
+      z-index: 0;
+      transition: filter 1.2s ease;
+    }
     #screensaver-content {
+      position: relative;
+      z-index: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -186,6 +209,7 @@
   </style>
 </head>
 <body>
+  <div id="bg-layer"></div>
   <div class="overlay"></div>
   <div class="header">
     <div class="group-time" id="group-time">Loading...</div>
@@ -205,6 +229,7 @@
   <div class="debug" id="debug"></div>
 
   <div id="screensaver">
+    <div id="saver-bg-layer"></div>
     <div id="screensaver-content">
       <img id="screensaver-logo" src="https://irbrnndhnydywjdmqdvc.supabase.co/storage/v1/object/public/companylogos/logos/4227b196-86b9-47f3-afef-7cf51d50e077.png" alt="TPRC">
       <div id="screensaver-clock"></div>
@@ -224,6 +249,156 @@
       3: '11:00 AM',
       4: '1:30 PM'
     };
+
+
+    // ===================================================================
+    // SEASONAL AND HOLIDAY BACKGROUNDS
+    // ===================================================================
+    // Each theme sets the backdrop and the dark overlay that sits on top
+    // of it. The overlay is what keeps the white client names readable,
+    // so if you change a backdrop, check the names are still easy to read
+    // from across the room before leaving it up.
+    //
+    // Each theme keeps the real background photo and shifts its colour,
+    // so every season still shows an actual photograph rather than a
+    // flat wash. `filter` recolours the photo; `overlay` is the dark
+    // sheet on top that keeps the white client names readable.
+    //
+    // To drop in a different photo for a theme, add a bg line to it:
+    //     bg: 'url("backgrounds/thanksgiving.jpg")',
+    // A theme with no bg line uses the normal background photo.
+    //
+    // To preview a theme on any date, add ?theme= and its name to the
+    // address, e.g.  .../tprc-groups/?theme=thanksgiving
+    // Add ?theme=off to force the plain, unfiltered background back.
+
+    var DEFAULT_THEME = {
+      name:    'default',
+      bg:      'url("https://i.imgur.com/BffsTtW.jpeg")',
+      saverBg: 'url("https://i.imgur.com/pBaRics.jpeg")',
+      filter:  'none',
+      overlay: 'rgba(10, 30, 20, 0.55)'
+    };
+
+    // Holidays win over seasons. Dates that move each year (Thanksgiving)
+    // are worked out, not hardcoded, so this keeps running after 2026.
+    var HOLIDAY_THEMES = [
+      {
+        name:    'thanksgiving',
+        window:  function (y) {
+          var t = nthWeekdayOf(y, 10, 4, 4);          // 4th Thursday of November
+          return [addDays(t, -3), addDays(t, 1)];     // Monday to Friday of Thanksgiving week
+        },
+        filter:  'sepia(0.7) saturate(2.5) hue-rotate(-20deg) brightness(1.12) contrast(1.05)',
+        overlay: 'rgba(34, 16, 4, 0.46)'
+      },
+      {
+        name:    'winter-holidays',
+        window:  function (y) { return [new Date(y, 11, 1), new Date(y, 11, 26)]; },
+        filter:  'saturate(1.55) hue-rotate(8deg) brightness(0.98) contrast(1.12)',
+        overlay: 'rgba(5, 26, 18, 0.48)'
+      },
+      {
+        name:    'new-year',
+        window:  function (y) { return [new Date(y, 11, 27), new Date(y + 1, 0, 2)]; },
+        filter:  'saturate(0.7) hue-rotate(172deg) brightness(1.08) contrast(1.05)',
+        overlay: 'rgba(8, 14, 34, 0.46)'
+      },
+      {
+        name:    'halloween',
+        window:  function (y) { return [new Date(y, 9, 24), new Date(y, 9, 31)]; },
+        filter:  'sepia(0.6) saturate(3) hue-rotate(-38deg) brightness(0.95) contrast(1.15)',
+        overlay: 'rgba(22, 8, 26, 0.46)'
+      }
+    ];
+
+    // Every day of the year falls in exactly one of these.
+    var SEASON_THEMES = [
+      {
+        name:    'spring',
+        window:  function (y) { return [new Date(y, 2, 1), new Date(y, 4, 31)]; },
+        filter:  'saturate(1.9) hue-rotate(12deg) brightness(1.2) contrast(1.02)',
+        overlay: 'rgba(6, 28, 14, 0.45)'
+      },
+      {
+        name:    'summer',
+        window:  function (y) { return [new Date(y, 5, 1), new Date(y, 7, 31)]; },
+        filter:  'saturate(1.7) hue-rotate(-6deg) brightness(1.26)',
+        overlay: 'rgba(4, 24, 28, 0.45)'
+      },
+      {
+        name:    'autumn',
+        window:  function (y) { return [new Date(y, 8, 1), new Date(y, 10, 30)]; },
+        filter:  'sepia(0.5) saturate(2) hue-rotate(-16deg) brightness(1.06)',
+        overlay: 'rgba(26, 16, 6, 0.47)'
+      },
+      {
+        name:    'winter',
+        window:  function (y) { return [new Date(y, 11, 1), new Date(y + 1, 1, 29)]; },
+        filter:  'saturate(0.35) hue-rotate(155deg) brightness(1.25) contrast(0.92)',
+        overlay: 'rgba(8, 20, 38, 0.46)'
+      }
+    ];
+
+    function addDays(d, n) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+    }
+
+    // The nth given weekday of a month. weekday: 0 = Sunday, 4 = Thursday.
+    function nthWeekdayOf(year, month, weekday, n) {
+      var first = new Date(year, month, 1);
+      var shift = (weekday - first.getDay() + 7) % 7;
+      return new Date(year, month, 1 + shift + (n - 1) * 7);
+    }
+
+    function startOfDay(d) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    // Checks last year, this year and next year so windows that cross
+    // New Year's Eve (winter, new-year) match on both sides of the join.
+    function matchTheme(list, today) {
+      var day = startOfDay(today);
+      for (var i = 0; i < list.length; i++) {
+        for (var y = today.getFullYear() - 1; y <= today.getFullYear() + 1; y++) {
+          var w = list[i].window(y);
+          if (day >= startOfDay(w[0]) && day <= startOfDay(w[1])) return list[i];
+        }
+      }
+      return null;
+    }
+
+    function themeFor(today) {
+      var forced = (location.search.match(/[?&]theme=([\w-]+)/) || [])[1];
+      if (forced) {
+        if (forced === 'off') return DEFAULT_THEME;
+        var all = HOLIDAY_THEMES.concat(SEASON_THEMES);
+        for (var i = 0; i < all.length; i++) {
+          if (all[i].name === forced) return all[i];
+        }
+      }
+      return matchTheme(HOLIDAY_THEMES, today)
+          || matchTheme(SEASON_THEMES, today)
+          || DEFAULT_THEME;
+    }
+
+    var currentTheme = null;
+
+    function applyTheme() {
+      var theme = themeFor(new Date());
+      if (currentTheme === theme.name) return;      // nothing to redraw
+      currentTheme = theme.name;
+
+      var layer = document.getElementById('bg-layer');
+      layer.style.backgroundImage = theme.bg || DEFAULT_THEME.bg;
+      layer.style.filter = theme.filter || 'none';
+
+      document.querySelector('.overlay').style.background = theme.overlay;
+
+      var saver = document.getElementById('saver-bg-layer');
+      saver.style.backgroundImage = theme.saverBg || DEFAULT_THEME.saverBg;
+      saver.style.filter = theme.saverFilter || theme.filter || 'none';
+    }
 
     function getCurrentSlide() {
       var now = new Date();
@@ -434,6 +609,7 @@
       }
     }
 
+    applyTheme();
     fetchData();
     fetchJFT();
     checkDisplayMode();
@@ -446,10 +622,34 @@
     setInterval(function() {
       fetchData();
       checkDisplayMode();
+      applyTheme();
     }, 30000);
 
     setInterval(updateClock, 1000);
     setInterval(shiftPosition, 5 * 60 * 1000);
+
+    // ===================================================================
+    // NIGHTLY RELOAD
+    // ===================================================================
+    // The page refreshes its DATA every couple of minutes, but it never
+    // reloads its own code. Without this, a change pushed to the repo sits
+    // unseen until somebody walks over to the TV and presses refresh.
+    // So reload once in the small hours, when the screensaver is up and
+    // nobody is reading the screen.
+    var RELOAD_HOUR = 3;
+    var RELOAD_MINUTE = 30;
+    var PAGE_LOADED_AT = Date.now();
+
+    function maybeReloadOvernight() {
+      // Don't bounce straight back if the page was opened at the reload time.
+      if (Date.now() - PAGE_LOADED_AT < 10 * 60 * 1000) return;
+      var now = new Date();
+      if (now.getHours() === RELOAD_HOUR && now.getMinutes() === RELOAD_MINUTE) {
+        location.reload();
+      }
+    }
+
+    setInterval(maybeReloadOvernight, 30000);
   </script>
 </body>
 </html>
